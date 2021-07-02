@@ -11,6 +11,9 @@ fn test_all() {
 
     let platform = platform::Platform::new(gpk);
     let platform_join = join::PlatformJoinProcess::new(platform);
-    platform_join.gen_request(&mut rng);
+    let gen_req = platform_join.gen_request(&mut rng);
+
+    let issuer_join = join::IssuerJoinProcess::new(issuer);
+    issuer_join.check_join_req(&gen_req).expect("issuer: join requst wrong");
 }
 

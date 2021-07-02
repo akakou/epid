@@ -6,6 +6,7 @@ use rand::RngCore;
 use super::core::{GPK, ISK};
 use super::utils::gen_rand_scalar;
 
+#[derive(Copy, Clone)]
 pub struct Issuer {
     pub gpk: GPK,
     pub isk: ISK,
@@ -26,7 +27,7 @@ impl Issuer {
         Self::new(g1, g2, g3, h1, h2, gamma, w)
     }
 
-    fn new(
+    pub fn new(
         g1: G1Projective,
         g2: G2Projective,
         g3: Gt,

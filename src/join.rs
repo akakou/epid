@@ -3,10 +3,10 @@ use group::GroupEncoding;
 
 use rand::RngCore;
 
-use crate::{platform::Platform, utils::calc_sha256_scalar};
+use crate::{issuer::Issuer, platform::Platform, utils::calc_sha256_scalar};
 use crate::utils::gen_rand_scalar;
 
-pub struct JoinGenRequest {
+pub struct JoinRequest {
     pub large_t: G1Projective,
     pub large_y1: G1Projective,
     pub large_y2: G1Projective,
@@ -14,8 +14,6 @@ pub struct JoinGenRequest {
     pub y1: Scalar,
     pub y2: Scalar
 }
-
-pub struct IssuerJoinProcess {}
 
 pub struct PlatformJoinProcess {
     platform: Platform,
@@ -38,7 +36,7 @@ impl PlatformJoinProcess {
         }
     }
 
-    pub fn gen_request(&self, rng: &mut impl RngCore) -> JoinGenRequest {
+    pub fn gen_request(&self, rng: &mut impl RngCore) -> JoinRequest {
         let f = gen_rand_scalar(rng);
         let y_dash = gen_rand_scalar(rng);
         let large_t = self.platform.gpk.h1 * f + self.platform.gpk.h2 * y_dash;
@@ -48,7 +46,7 @@ impl PlatformJoinProcess {
         let r2 = gen_rand_scalar(rng);
 
         let large_y1 = self.platform.gpk.h1 * r1;
-        let large_y2 = self.platform.gpk.h2 * r1;
+        let large_y2 = self.platform.gpk.h2 * r2;
 
         // b = hash(large_y1, large_y2, T)
         let mut vec: Vec<u8> = vec![];
@@ -60,7 +58,7 @@ impl PlatformJoinProcess {
         let y1 = r1 + b * f;
         let y2 = r2 + b * y_dash;
 
-        JoinGenRequest {
+        JoinRequest {
             large_t,
             large_y1,
             large_y2,
@@ -69,4 +67,28 @@ impl PlatformJoinProcess {
             y2
         }
     }
+}
+
+
+pub struct IssuerJoinProcess {
+    issuer: Issuer
+}
+
+impl IssuerJoinProcess {
+    pub fn new(issuer: Issuer) -> Self {
+        Self {
+            issuer
+        }
+    }
+
+    pub fn check_join_req(&self, req: &JoinRequest) -> Result<(), ()>{
+        let left = (self.issuer.gpk.h1 * req.y1) + (self.issuer.gpk.h2 * req.y2);
+        let right = req.large_y1 + req.large_y2 + req.large_t * req.b;
+        
+        if left == right {
+            Ok(())
+        } else {
+            Err(())
+        }
+    } 
 }
