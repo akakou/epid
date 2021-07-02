@@ -1,6 +1,7 @@
 use super::core::{GPK, ISK};
-struct Member {
+
+struct Platform {
     gpk: GPK,
 }
 
-impl Member {}
+impl Platform {}

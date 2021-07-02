@@ -1,4 +1,4 @@
 mod core;
 mod issuer;
-mod member;
+mod platform;
 mod utils;
