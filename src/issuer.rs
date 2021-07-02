@@ -12,7 +12,7 @@ pub struct Issuer {
 }
 
 impl Issuer {
-    fn random(rng: &mut impl RngCore) -> Self {
+    pub fn random(rng: &mut impl RngCore) -> Self {
         let g1 = G1Projective::generator();
         let g2 = G2Projective::generator();
         let g3 = Gt::generator();

@@ -1,7 +1,11 @@
 use super::core::{GPK, ISK};
 
-struct Platform {
-    gpk: GPK,
+pub struct Platform {
+    pub gpk: GPK,
 }
 
-impl Platform {}
+impl Platform {
+    pub fn new(gpk: GPK) -> Self {
+        Self {gpk}
+    }
+}
