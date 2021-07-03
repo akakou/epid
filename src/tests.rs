@@ -1,3 +1,4 @@
+use crate::verifier::Verifier;
 use crate::*;
 
 #[test]
@@ -16,7 +17,13 @@ fn test_all() {
         .gen_join_response(&mut rng)
         .expect("genjoin resp error");
 
-    platform_join
+    let platform = platform_join
         .gen_platform(&join_resp)
         .expect("gen platform error");
+
+    let msg = vec![1, 2, 3];
+    let signature = platform.sign(&msg, &mut rng);
+
+    let verifier = Verifier::new(gpk);
+    verifier.verify(&signature, &msg).unwrap();
 }

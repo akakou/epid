@@ -6,5 +6,6 @@ mod issuer;
 mod join;
 mod platform;
 mod utils;
+mod verifier;
 
 mod tests;

@@ -29,7 +29,6 @@ impl Platform {
     }
 
     pub fn sign(&self, msg: &[u8], rng: &mut impl RngCore) -> Signature {
-        let hash = calc_sha256_scalar(msg);
         let large_b = Gt::generator() * gen_rand_scalar(rng);
         let large_k = large_b * self.sk.f;
 
@@ -43,6 +42,7 @@ impl Platform {
         let r_b = gen_rand_scalar(rng);
 
         let large_r_1 = large_b * r_f;
+
         let large_r_2_1 =
             pairing(&large_t.to_affine(), &G2Projective::generator().to_affine()) * (-r_x);
 
@@ -62,8 +62,6 @@ impl Platform {
 
         // c = Hash(gpk, B, K, T, R1, R2, m).
         let mut vec: Vec<u8> = vec![];
-        // vec.append(&mut large_b..to_bytes());
-        // to_bytes().as_mut().to_vec());
         vec.append(&mut large_b.to_bytes().as_ref().to_vec());
         vec.append(&mut large_k.to_bytes().as_ref().to_vec());
         vec.append(&mut large_t.to_bytes().as_ref().to_vec());
@@ -78,6 +76,8 @@ impl Platform {
         let s_a = r_a + c * a;
         let s_b = r_b + c * b;
 
+        println!("{:x?}", large_r_2);
+
         let platform_attestation = PlatformAttestation {
             large_b,
             large_k,
@@ -86,6 +86,7 @@ impl Platform {
             s_f,
             s_a,
             s_b,
+            c,
         };
 
         Signature {

@@ -26,6 +26,7 @@ pub struct PlatformAttestation {
     pub s_f: Scalar,
     pub s_a: Scalar,
     pub s_b: Scalar,
+    pub c: Scalar,
 }
 
 pub struct Signature {
