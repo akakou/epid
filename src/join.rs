@@ -13,7 +13,6 @@ pub struct JoinRequest {
     pub large_t: G1Projective,
     pub large_y1: G1Projective,
     pub large_y2: G1Projective,
-    pub b: Scalar,
     pub y1: Scalar,
     pub y2: Scalar
 }
@@ -75,7 +74,6 @@ impl PlatformJoinProcess {
             large_t,
             large_y1,
             large_y2,
-            b,
             y1,
             y2
         }
@@ -131,8 +129,17 @@ impl IssuerJoinProcess {
     }
 
     fn check_join_request(&self) -> Result<(), ()>{
+
+        // b = hash(large_y1, large_y2, T)
+        let mut vec: Vec<u8> = vec![];
+        vec.append(&mut self.req.large_y1.to_bytes().as_mut().to_vec());
+        vec.append(&mut self.req.large_y2.to_bytes().as_mut().to_vec());
+        vec.append(&mut self.req.large_t.to_bytes().as_mut().to_vec());
+        let b = calc_sha256_scalar(&vec);
+
+
         let left = (self.issuer.gpk.h1 * self.req.y1) + (self.issuer.gpk.h2 * self.req.y2);
-        let right = self.req.large_y1 + self.req.large_y2 + self.req.large_t * self.req.b;
+        let right = self.req.large_y1 + self.req.large_y2 + self.req.large_t * b;
         
         if left == right {
             Ok(())
