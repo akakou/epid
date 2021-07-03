@@ -1,9 +1,8 @@
 use bls12_381::Scalar;
+use byteorder::{BigEndian, ByteOrder};
 use ff::Field;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
-use byteorder::{BigEndian, ByteOrder};
-
 
 pub fn gen_rand_scalar(rng: &mut impl RngCore) -> Scalar {
     Scalar::random(rng)

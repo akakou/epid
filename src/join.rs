@@ -1,20 +1,24 @@
 use crate::platform::SK;
-use bls12_381::{G1Projective, G2Projective, Scalar, pairing};
+use bls12_381::{pairing, G1Projective, G2Projective, Scalar};
 use ff::PrimeField;
 use group::{Curve, GroupEncoding};
 
 use rand::RngCore;
 
-use crate::{issuer::{self, Issuer}, platform::Platform, utils::calc_sha256_scalar};
-use crate::utils::gen_rand_scalar;
 use crate::core::GPK;
+use crate::utils::gen_rand_scalar;
+use crate::{
+    issuer::{self, Issuer},
+    platform::Platform,
+    utils::calc_sha256_scalar,
+};
 
 pub struct JoinRequest {
     pub large_t: G1Projective,
     pub large_y1: G1Projective,
     pub large_y2: G1Projective,
     pub y1: Scalar,
-    pub y2: Scalar
+    pub y2: Scalar,
 }
 
 pub struct JoinResponse {
@@ -22,7 +26,6 @@ pub struct JoinResponse {
     pub x: Scalar,
     pub y_dash_dash: Scalar,
 }
-
 
 pub struct PlatformJoinProcess {
     gpk: GPK,
@@ -63,7 +66,6 @@ impl PlatformJoinProcess {
         vec.append(&mut large_y2.to_bytes().as_mut().to_vec());
         vec.append(&mut large_t.to_bytes().as_mut().to_vec());
         let b = calc_sha256_scalar(&vec);
-        
         let y1 = r1 + b * f;
         let y2 = r2 + b * y_dash;
 
@@ -75,13 +77,15 @@ impl PlatformJoinProcess {
             large_y1,
             large_y2,
             y1,
-            y2
+            y2,
         }
     }
 
     pub fn gen_platform(&self, resp: &JoinResponse) -> Result<Platform, ()> {
         let f = self.f.expect("gen_request have not done (f is None)");
-        let y_dash = self.y_dash.expect("gen_request have not done (y_dash is None)");
+        let y_dash = self
+            .y_dash
+            .expect("gen_request have not done (y_dash is None)");
         let y = y_dash + resp.y_dash_dash;
 
         self.check_resp(resp, y, f)?;
@@ -90,12 +94,10 @@ impl PlatformJoinProcess {
             large_a: resp.large_a,
             x: resp.x,
             y,
-            f
+            f,
         };
 
-        Ok(
-            Platform::new(self.gpk, sk)
-        )
+        Ok(Platform::new(self.gpk, sk))
     }
 
     fn check_resp(&self, resp: &JoinResponse, y: Scalar, f: Scalar) -> Result<(), ()> {
@@ -105,31 +107,27 @@ impl PlatformJoinProcess {
         let right1 = G1Projective::generator() + self.gpk.h1 * f + self.gpk.h2 * y;
         let right2 = G2Projective::generator();
 
-        if pairing(&left1.to_affine(), &left2.to_affine()) == pairing(&right1.to_affine(), &right2.to_affine()) {
+        if pairing(&left1.to_affine(), &left2.to_affine())
+            == pairing(&right1.to_affine(), &right2.to_affine())
+        {
             Ok(())
-        }
-        else {
+        } else {
             Err(())
         }
     }
 }
 
-
 pub struct IssuerJoinProcess {
     issuer: Issuer,
-    req: JoinRequest
+    req: JoinRequest,
 }
 
 impl IssuerJoinProcess {
     pub fn new(issuer: Issuer, req: JoinRequest) -> Self {
-        Self {
-            issuer,
-            req
-        }
+        Self { issuer, req }
     }
 
-    fn check_join_request(&self) -> Result<(), ()>{
-
+    fn check_join_request(&self) -> Result<(), ()> {
         // b = hash(large_y1, large_y2, T)
         let mut vec: Vec<u8> = vec![];
         vec.append(&mut self.req.large_y1.to_bytes().as_mut().to_vec());
@@ -137,16 +135,14 @@ impl IssuerJoinProcess {
         vec.append(&mut self.req.large_t.to_bytes().as_mut().to_vec());
         let b = calc_sha256_scalar(&vec);
 
-
         let left = (self.issuer.gpk.h1 * self.req.y1) + (self.issuer.gpk.h2 * self.req.y2);
         let right = self.req.large_y1 + self.req.large_y2 + self.req.large_t * b;
-        
         if left == right {
             Ok(())
         } else {
             Err(())
         }
-    } 
+    }
 
     pub fn gen_join_response(&self, rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
         self.check_join_request()?;
@@ -154,16 +150,15 @@ impl IssuerJoinProcess {
         let x = gen_rand_scalar(rng);
         let y_dash_dash = gen_rand_scalar(rng);
 
-
         let base = G1Projective::generator() + self.req.large_t + self.issuer.gpk.h2 * y_dash_dash;
         let exp = (x + self.issuer.isk.gamma).invert().unwrap();
 
         let large_a = base * exp;
-        
-        Ok(JoinResponse { 
+
+        Ok(JoinResponse {
             large_a,
             x,
-            y_dash_dash
+            y_dash_dash,
         })
     }
 }
