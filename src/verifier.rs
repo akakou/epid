@@ -2,6 +2,7 @@ use crate::core::PlatformAttestation;
 use crate::core::Signature;
 use crate::core::GPK;
 use crate::utils::calc_sha256_scalar;
+use crate::utils::pj_pairing;
 
 use bls12_381::pairing;
 use group::{Curve, GroupEncoding};
@@ -16,6 +17,15 @@ impl Verifier {
     }
 
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), ()> {
+        let GPK {
+            h1,
+            h2,
+            w,
+            g1,
+            g2,
+            g3: _,
+        } = self.gpk;
+
         let PlatformAttestation {
             large_b,
             large_k,
@@ -27,25 +37,16 @@ impl Verifier {
             c,
         } = signature.platform_attestation;
 
-        let GPK {
-            g1,
-            g2,
-            g3: _,
-            h1,
-            h2,
-            w,
-        } = self.gpk;
-
         let large_r1 = large_b * s_f + large_k * (-c);
 
-        let large_r2_1 = pairing(&large_t.to_affine(), &g2.to_affine()) * (-s_x);
+        let large_r2_1 = pj_pairing(&large_t, &g2) * (-s_x);
 
-        let large_r2_2 = pairing(&h1.to_affine(), &g2.to_affine()) * s_f;
-        let large_r2_3 = pairing(&h2.to_affine(), &g2.to_affine()) * s_b;
-        let large_r2_4 = pairing(&h2.to_affine(), &w.to_affine()) * s_a;
+        let large_r2_2 = pj_pairing(&h1, &g2) * s_f;
+        let large_r2_3 = pj_pairing(&h2, &g2) * s_b;
+        let large_r2_4 = pj_pairing(&h2, &w) * s_a;
 
-        let large_r2_5_1 = pairing(&g1.to_affine(), &g2.to_affine());
-        let large_r2_5_2 = pairing(&large_t.to_affine(), &w.to_affine());
+        let large_r2_5_1 = pj_pairing(&g1, &g2);
+        let large_r2_5_2 = pj_pairing(&large_t, &w);
 
         let large_r2_5 = (large_r2_5_1 - large_r2_5_2) * c;
         let large_r2 = large_r2_1 + large_r2_2 + large_r2_3 + large_r2_4 + large_r2_5;

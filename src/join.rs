@@ -1,4 +1,5 @@
 use crate::platform::SK;
+use crate::utils::pj_pairing;
 use bls12_381::{pairing, G1Projective, G2Projective, Scalar};
 use ff::PrimeField;
 use group::{Curve, GroupEncoding};
@@ -49,16 +50,25 @@ impl PlatformJoinProcess {
     }
 
     pub fn gen_request(&mut self, rng: &mut impl RngCore) -> JoinRequest {
+        let GPK {
+            h1,
+            h2,
+            g1: _,
+            g2: _,
+            g3: _,
+            w: _,
+        } = self.gpk;
+
         let f = gen_rand_scalar(rng);
         let y_dash = gen_rand_scalar(rng);
-        let large_t = self.gpk.h1 * f + self.gpk.h2 * y_dash;
+        let large_t = h1 * f + h2 * y_dash;
 
         // PK {(f,y') : (h1^f) * (h2^y') = T}
         let r1 = gen_rand_scalar(rng);
         let r2 = gen_rand_scalar(rng);
 
-        let large_y1 = self.gpk.h1 * r1;
-        let large_y2 = self.gpk.h2 * r2;
+        let large_y1 = h1 * r1;
+        let large_y2 = h2 * r2;
 
         // b = hash(large_y1, large_y2, T)
         let mut vec: Vec<u8> = vec![];
@@ -102,15 +112,21 @@ impl PlatformJoinProcess {
     }
 
     fn check_resp(&self, resp: &JoinResponse, y: Scalar, f: Scalar) -> Result<(), ()> {
+        let GPK {
+            h1,
+            h2,
+            g1,
+            g2,
+            g3: _,
+            w,
+        } = self.gpk;
         let left1 = resp.large_a;
-        let left2 = self.gpk.w + G2Projective::generator() * resp.x;
+        let left2 = w + g2 * resp.x;
 
-        let right1 = G1Projective::generator() + self.gpk.h1 * f + self.gpk.h2 * y;
-        let right2 = G2Projective::generator();
+        let right1 = g1 + h1 * f + h2 * y;
+        let right2 = g2;
 
-        if pairing(&left1.to_affine(), &left2.to_affine())
-            == pairing(&right1.to_affine(), &right2.to_affine())
-        {
+        if pj_pairing(&left1, &left2) == pj_pairing(&right1, &right2) {
             Ok(())
         } else {
             Err(())
@@ -129,15 +145,32 @@ impl IssuerJoinProcess {
     }
 
     fn check_join_request(&self) -> Result<(), ()> {
+        let GPK {
+            h1,
+            h2,
+            g1: _,
+            g2: _,
+            g3: _,
+            w: _,
+        } = self.issuer.gpk;
+
+        let JoinRequest {
+            large_y1,
+            large_y2,
+            large_t,
+            y1,
+            y2,
+        } = self.req;
+
         // b = hash(large_y1, large_y2, T)
         let mut vec: Vec<u8> = vec![];
-        vec.append(&mut self.req.large_y1.to_bytes().as_mut().to_vec());
-        vec.append(&mut self.req.large_y2.to_bytes().as_mut().to_vec());
-        vec.append(&mut self.req.large_t.to_bytes().as_mut().to_vec());
+        vec.append(&mut large_y1.to_bytes().as_mut().to_vec());
+        vec.append(&mut large_y2.to_bytes().as_mut().to_vec());
+        vec.append(&mut large_t.to_bytes().as_mut().to_vec());
         let b = calc_sha256_scalar(&vec);
 
-        let left = (self.issuer.gpk.h1 * self.req.y1) + (self.issuer.gpk.h2 * self.req.y2);
-        let right = self.req.large_y1 + self.req.large_y2 + self.req.large_t * b;
+        let left = h1 * y1 + h2 * y2;
+        let right = large_y1 + large_y2 + large_t * b;
         if left == right {
             Ok(())
         } else {
@@ -146,12 +179,21 @@ impl IssuerJoinProcess {
     }
 
     pub fn gen_join_response(&self, rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
+        let GPK {
+            h1: _,
+            h2,
+            g1,
+            g2: _,
+            g3: _,
+            w: _,
+        } = self.issuer.gpk;
+
         self.check_join_request()?;
 
         let x = gen_rand_scalar(rng);
         let y_dash_dash = gen_rand_scalar(rng);
 
-        let base = G1Projective::generator() + self.req.large_t + self.issuer.gpk.h2 * y_dash_dash;
+        let base = g1 + self.req.large_t + h2 * y_dash_dash;
         let exp = (x + self.issuer.isk.gamma).invert().unwrap();
 
         let large_a = base * exp;
