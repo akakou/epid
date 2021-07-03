@@ -3,28 +3,17 @@ use ff::Field;
 use group::{Curve, Group, GroupEncoding};
 use rand::RngCore;
 
+use super::core::{GPK, ISK};
 use super::utils::gen_rand_scalar;
 
-struct GPK {
-    pub g1: G1Projective,
-    pub g2: G2Projective,
-    pub g3: Gt,
-    pub h1: G1Projective,
-    pub h2: G1Projective,
-    pub w: G2Projective,
-}
-
-struct ISK {
-    pub gamma: Scalar,
-}
-
-struct Issuer {
+#[derive(Copy, Clone)]
+pub struct Issuer {
     pub gpk: GPK,
     pub isk: ISK,
 }
 
 impl Issuer {
-    fn random(rng: &mut impl RngCore) -> Self {
+    pub fn random(rng: &mut impl RngCore) -> Self {
         let g1 = G1Projective::generator();
         let g2 = G2Projective::generator();
         let g3 = Gt::generator();
@@ -38,7 +27,7 @@ impl Issuer {
         Self::new(g1, g2, g3, h1, h2, gamma, w)
     }
 
-    fn new(
+    pub fn new(
         g1: G1Projective,
         g2: G2Projective,
         g3: Gt,
@@ -61,7 +50,6 @@ impl Issuer {
         Self { gpk, isk }
     }
 }
-
 
 #[test]
 fn test_random() {
