@@ -17,3 +17,17 @@ pub struct GPK {
 pub struct ISK {
     pub gamma: Scalar,
 }
+
+pub struct PlatformAttestation {
+    pub large_b: Gt,
+    pub large_k: Gt,
+    pub large_t: G1Projective,
+    pub s_x: Scalar,
+    pub s_f: Scalar,
+    pub s_a: Scalar,
+    pub s_b: Scalar,
+}
+
+pub struct Signature {
+    pub platform_attestation: PlatformAttestation,
+}

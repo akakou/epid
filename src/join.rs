@@ -62,6 +62,7 @@ impl PlatformJoinProcess {
 
         // b = hash(large_y1, large_y2, T)
         let mut vec: Vec<u8> = vec![];
+
         vec.append(&mut large_y1.to_bytes().as_mut().to_vec());
         vec.append(&mut large_y2.to_bytes().as_mut().to_vec());
         vec.append(&mut large_t.to_bytes().as_mut().to_vec());
