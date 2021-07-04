@@ -7,5 +7,6 @@ mod join;
 mod platform;
 mod utils;
 mod verifier;
+mod zpk;
 
 mod tests;

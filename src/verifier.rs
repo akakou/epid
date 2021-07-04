@@ -51,8 +51,6 @@ impl Verifier {
         let large_r2_5 = (large_r2_5_1 - large_r2_5_2) * c;
         let large_r2 = large_r2_1 + large_r2_2 + large_r2_3 + large_r2_4 + large_r2_5;
 
-        println!("{:x?}", large_r2);
-
         let mut vec = vec![];
         vec.append(&mut large_b.to_bytes().as_ref().to_vec());
         vec.append(&mut large_k.to_bytes().as_ref().to_vec());

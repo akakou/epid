@@ -1,5 +1,8 @@
 use crate::platform::SK;
 use crate::utils::pj_pairing;
+use crate::zpk::zpk_sign;
+use crate::zpk::zpk_verify;
+use crate::zpk::ZPKSignature;
 use bls12_381::{pairing, G1Projective, G2Projective, Scalar};
 use ff::PrimeField;
 use group::{Curve, GroupEncoding};
@@ -15,11 +18,7 @@ use crate::{
 };
 
 pub struct JoinRequest {
-    pub large_t: G1Projective,
-    pub large_y1: G1Projective,
-    pub large_y2: G1Projective,
-    pub y1: Scalar,
-    pub y2: Scalar,
+    pub signature: ZPKSignature,
 }
 
 pub struct JoinResponse {
@@ -49,7 +48,7 @@ impl PlatformJoinProcess {
         }
     }
 
-    pub fn gen_request(&mut self, rng: &mut impl RngCore) -> JoinRequest {
+    pub fn gen_request(&mut self, mut rng: &mut impl RngCore) -> JoinRequest {
         let GPK {
             h1,
             h2,
@@ -64,32 +63,12 @@ impl PlatformJoinProcess {
         let large_t = h1 * f + h2 * y_dash;
 
         // PK {(f,y') : (h1^f) * (h2^y') = T}
-        let r1 = gen_rand_scalar(rng);
-        let r2 = gen_rand_scalar(rng);
-
-        let large_y1 = h1 * r1;
-        let large_y2 = h2 * r2;
-
-        // b = hash(large_y1, large_y2, T)
-        let mut vec: Vec<u8> = vec![];
-
-        vec.append(&mut large_y1.to_bytes().as_mut().to_vec());
-        vec.append(&mut large_y2.to_bytes().as_mut().to_vec());
-        vec.append(&mut large_t.to_bytes().as_mut().to_vec());
-        let b = calc_sha256_scalar(&vec);
-        let y1 = r1 + b * f;
-        let y2 = r2 + b * y_dash;
+        let signature = zpk_sign(&f, &y_dash, &large_t, &self.gpk, &mut rng);
 
         self.f = Some(f);
         self.y_dash = Some(y_dash);
 
-        JoinRequest {
-            large_t,
-            large_y1,
-            large_y2,
-            y1,
-            y2,
-        }
+        JoinRequest { signature }
     }
 
     pub fn gen_platform(&self, resp: &JoinResponse) -> Result<Platform, ()> {
@@ -144,41 +123,9 @@ impl IssuerJoinProcess {
         Self { issuer, req }
     }
 
-    fn check_join_request(&self) -> Result<(), ()> {
-        let GPK {
-            h1,
-            h2,
-            g1: _,
-            g2: _,
-            g3: _,
-            w: _,
-        } = self.issuer.gpk;
+    pub fn gen_join_response(&self, mut rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
+        let gpk = self.issuer.gpk;
 
-        let JoinRequest {
-            large_y1,
-            large_y2,
-            large_t,
-            y1,
-            y2,
-        } = self.req;
-
-        // b = hash(large_y1, large_y2, T)
-        let mut vec: Vec<u8> = vec![];
-        vec.append(&mut large_y1.to_bytes().as_mut().to_vec());
-        vec.append(&mut large_y2.to_bytes().as_mut().to_vec());
-        vec.append(&mut large_t.to_bytes().as_mut().to_vec());
-        let b = calc_sha256_scalar(&vec);
-
-        let left = h1 * y1 + h2 * y2;
-        let right = large_y1 + large_y2 + large_t * b;
-        if left == right {
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
-    pub fn gen_join_response(&self, rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
         let GPK {
             h1: _,
             h2,
@@ -186,14 +133,14 @@ impl IssuerJoinProcess {
             g2: _,
             g3: _,
             w: _,
-        } = self.issuer.gpk;
+        } = gpk;
 
-        self.check_join_request()?;
+        zpk_verify(&self.req.signature, &gpk, &mut rng)?;
 
         let x = gen_rand_scalar(rng);
         let y_dash_dash = gen_rand_scalar(rng);
 
-        let base = g1 + self.req.large_t + h2 * y_dash_dash;
+        let base = g1 + self.req.signature.large_t + h2 * y_dash_dash;
         let exp = (x + self.issuer.isk.gamma).invert().unwrap();
 
         let large_a = base * exp;
