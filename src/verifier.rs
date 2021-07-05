@@ -1,4 +1,5 @@
 use crate::core::PlatformAttestation;
+use crate::core::Revocation;
 use crate::core::Signature;
 use crate::core::UnRevokedAttestation;
 use crate::core::GPK;
@@ -19,7 +20,7 @@ impl Verifier {
         Self { gpk }
     }
 
-    pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), u8> {
+    pub fn verify(&self, signature: &Signature, msg: &[u8], rl: &[Revocation]) -> Result<(), u8> {
         let GPK {
             h1,
             h2,
@@ -64,8 +65,10 @@ impl Verifier {
 
         let c_dash = calc_sha256_scalar(&vec);
 
-        for un_attest in signature.unrevoked_attestations.iter() {
-            let UnRevokedAttestation { proof1, proof2 } = un_attest;
+        for (un_attest, r) in signature.unrevoked_attestations.iter().zip(rl.iter()) {
+            let UnRevokedAttestation { mut proof1, proof2 } = &un_attest;
+            proof1.large_a1 = r.large_b;
+            proof1.large_a2 = -r.large_k;
 
             match zpk_verify(&proof1) {
                 Ok(_) => {}

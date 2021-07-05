@@ -10,6 +10,7 @@ use core::ops::Mul;
 use group::GroupEncoding;
 use rand::RngCore;
 
+#[derive(Copy, Clone)]
 pub struct ZPKSignature<C: GroupEncoding + Copy + Mul<Scalar, Output = C> + Add<Output = C> + Eq> {
     pub y1: Scalar,
     pub y2: Scalar,

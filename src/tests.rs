@@ -44,10 +44,10 @@ fn test_all() {
     let signature = platform.sign(&msg, &rl, &mut rng);
 
     let verifier = Verifier::new(gpk);
-    verifier.verify(&signature, &msg).unwrap();
+    verifier.verify(&signature, &msg, &rl).unwrap();
 
     let signature = rl_platform.sign(&msg, &rl, &mut rng);
-    match verifier.verify(&signature, &msg) {
+    match verifier.verify(&signature, &msg, &rl) {
         Ok(_) => assert!(false),
         Err(_) => assert!(true),
     }

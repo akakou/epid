@@ -32,6 +32,7 @@ pub struct PlatformAttestation {
     pub c: Scalar,
 }
 
+#[derive(Copy, Clone)]
 pub struct UnRevokedAttestation<
     C: GroupEncoding + Copy + Mul<Scalar, Output = C> + Add<C, Output = C> + Eq,
 > {
