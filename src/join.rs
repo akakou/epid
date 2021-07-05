@@ -63,7 +63,7 @@ impl PlatformJoinProcess {
         let large_t = h1 * f + h2 * y_dash;
 
         // PK {(f,y') : (h1^f) * (h2^y') = T}
-        let signature = zpk_sign(&f, &y_dash, &h1, &h2, &large_t, &self.gpk, &mut rng);
+        let signature = zpk_sign(&f, &y_dash, &h1, &h2, &large_t, &mut rng);
 
         self.f = Some(f);
         self.y_dash = Some(y_dash);
@@ -140,7 +140,8 @@ impl IssuerJoinProcess {
         let x = gen_rand_scalar(rng);
         let y_dash_dash = gen_rand_scalar(rng);
 
-        let base = g1 + self.req.signature.large_t + h2 * y_dash_dash;
+        let large_t = self.req.signature.large_beta;
+        let base = g1 + large_t + h2 * y_dash_dash;
         let exp = (x + self.issuer.isk.gamma).invert().unwrap();
 
         let large_a = base * exp;

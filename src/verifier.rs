@@ -5,6 +5,7 @@ use crate::core::GPK;
 use crate::utils::calc_sha256_scalar;
 use crate::utils::pj_pairing;
 use crate::zpk::zpk_verify;
+use bls12_381::Gt;
 
 use bls12_381::pairing;
 use group::{Curve, GroupEncoding};
@@ -18,7 +19,7 @@ impl Verifier {
         Self { gpk }
     }
 
-    pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), ()> {
+    pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), u8> {
         let GPK {
             h1,
             h2,
@@ -66,14 +67,27 @@ impl Verifier {
         for un_attest in signature.unrevoked_attestations.iter() {
             let UnRevokedAttestation { proof1, proof2 } = un_attest;
 
-            zpk_verify(&proof1)?;
-            zpk_verify(&proof2)?;
+            match zpk_verify(&proof1) {
+                Ok(_) => {}
+                Err(_) => return Err(1),
+            };
+
+            match zpk_verify(&proof2) {
+                Ok(_) => {}
+                Err(_) => return Err(2),
+            };
+
+            let one = Gt::identity();
+
+            if proof1.large_beta == one {
+                return Err(3);
+            }
         }
 
         if c == c_dash {
             Ok(())
         } else {
-            Err(())
+            Err(0)
         }
     }
 }

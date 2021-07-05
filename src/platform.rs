@@ -82,23 +82,17 @@ impl Platform {
         let mut unrevoked_attestations = vec![];
 
         for r in rl {
-            let rnd = gen_rand_scalar(rng);
-            let zpk_large_c = (large_b * f - r.large_k) * rnd;
+            // log_{B} K != log_{B1} K1
+            // let rnd = gen_rand_scalar(rng);
             let zpk_b = gen_rand_scalar(rng);
             let zpk_a = zpk_b * f;
 
-            let proof1 = zpk_sign(
-                &zpk_a,
-                &zpk_b,
-                &r.large_b,
-                &(-r.large_k),
-                &zpk_large_c,
-                &self.gpk,
-                rng,
-            );
+            let zpk_large_c = (r.large_b * f - r.large_k) * zpk_b;
+
+            let proof1 = zpk_sign(&zpk_a, &zpk_b, &r.large_b, &(-r.large_k), &zpk_large_c, rng);
 
             let one = Gt::identity();
-            let proof2 = zpk_sign(&zpk_a, &zpk_b, &one, &(-large_k), &g3, &self.gpk, rng);
+            let proof2 = zpk_sign(&zpk_a, &zpk_b, &large_b, &(-large_k), &one, rng);
 
             unrevoked_attestations.push(UnRevokedAttestation { proof1, proof2 });
         }
