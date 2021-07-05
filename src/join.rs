@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub struct JoinRequest {
-    pub signature: ZPKSignature,
+    pub signature: ZPKSignature<G1Projective>,
 }
 
 pub struct JoinResponse {
@@ -63,7 +63,7 @@ impl PlatformJoinProcess {
         let large_t = h1 * f + h2 * y_dash;
 
         // PK {(f,y') : (h1^f) * (h2^y') = T}
-        let signature = zpk_sign(&f, &y_dash, &large_t, &self.gpk, &mut rng);
+        let signature = zpk_sign(&f, &y_dash, &h1, &h2, &large_t, &self.gpk, &mut rng);
 
         self.f = Some(f);
         self.y_dash = Some(y_dash);
@@ -123,7 +123,7 @@ impl IssuerJoinProcess {
         Self { issuer, req }
     }
 
-    pub fn gen_join_response(&self, mut rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
+    pub fn gen_join_response(&self, rng: &mut impl RngCore) -> Result<JoinResponse, ()> {
         let gpk = self.issuer.gpk;
 
         let GPK {
@@ -135,7 +135,7 @@ impl IssuerJoinProcess {
             w: _,
         } = gpk;
 
-        zpk_verify(&self.req.signature, &gpk, &mut rng)?;
+        zpk_verify(&self.req.signature)?;
 
         let x = gen_rand_scalar(rng);
         let y_dash_dash = gen_rand_scalar(rng);

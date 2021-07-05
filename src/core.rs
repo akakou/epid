@@ -1,4 +1,7 @@
+use crate::zpk::ZPKSignature;
 use bls12_381::{pairing, G1Projective, G2Projective, Gt, Scalar};
+use core::ops::Add;
+use core::ops::Mul;
 use ff::Field;
 use group::{Curve, Group, GroupEncoding};
 use rand::RngCore;
@@ -29,6 +32,19 @@ pub struct PlatformAttestation {
     pub c: Scalar,
 }
 
+pub struct UnRevokedAttestation<
+    C: GroupEncoding + Copy + Mul<Scalar, Output = C> + Add<C, Output = C> + Eq,
+> {
+    pub proof1: ZPKSignature<C>,
+    pub proof2: ZPKSignature<C>,
+}
+
 pub struct Signature {
     pub platform_attestation: PlatformAttestation,
+    pub unrevoked_attestations: Vec<UnRevokedAttestation<Gt>>,
+}
+
+pub struct Revocation {
+    pub large_b: Gt,
+    pub large_k: Gt,
 }

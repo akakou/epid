@@ -22,7 +22,7 @@ fn test_all() {
         .expect("gen platform error");
 
     let msg = vec![1, 2, 3];
-    let signature = platform.sign(&msg, &mut rng);
+    let signature = platform.sign(&msg, &vec![], &mut rng);
 
     let verifier = Verifier::new(gpk);
     verifier.verify(&signature, &msg).unwrap();

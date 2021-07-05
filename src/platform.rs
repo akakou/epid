@@ -1,8 +1,11 @@
 use crate::core::PlatformAttestation;
+use crate::core::Revocation;
 use crate::core::Signature;
+use crate::core::UnRevokedAttestation;
 use crate::utils::calc_sha256_scalar;
 use crate::utils::gen_rand_scalar;
 use crate::utils::pj_pairing;
+use crate::zpk::zpk_sign;
 use bls12_381::pairing;
 use bls12_381::G2Projective;
 use bls12_381::{G1Projective, Gt, Scalar};
@@ -29,7 +32,7 @@ impl Platform {
         Self { gpk, sk }
     }
 
-    pub fn sign(&self, msg: &[u8], rng: &mut impl RngCore) -> Signature {
+    pub fn sign(&self, msg: &[u8], rl: &[Revocation], rng: &mut impl RngCore) -> Signature {
         let GPK {
             h1,
             h2,
@@ -76,6 +79,30 @@ impl Platform {
         let s_a = r_a + c * a;
         let s_b = r_b + c * b;
 
+        let mut unrevoked_attestations = vec![];
+
+        for r in rl {
+            let rnd = gen_rand_scalar(rng);
+            let zpk_large_c = (large_b * f - r.large_k) * rnd;
+            let zpk_b = gen_rand_scalar(rng);
+            let zpk_a = zpk_b * f;
+
+            let proof1 = zpk_sign(
+                &zpk_a,
+                &zpk_b,
+                &r.large_b,
+                &(-r.large_k),
+                &zpk_large_c,
+                &self.gpk,
+                rng,
+            );
+
+            let one = Gt::identity();
+            let proof2 = zpk_sign(&zpk_a, &zpk_b, &one, &(-large_k), &g3, &self.gpk, rng);
+
+            unrevoked_attestations.push(UnRevokedAttestation { proof1, proof2 });
+        }
+
         let platform_attestation = PlatformAttestation {
             large_b,
             large_k,
@@ -89,6 +116,7 @@ impl Platform {
 
         Signature {
             platform_attestation,
+            unrevoked_attestations,
         }
     }
 }

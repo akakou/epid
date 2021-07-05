@@ -1,12 +1,12 @@
 #[macro_use]
 extern crate slice_as_array;
 
-mod core;
-mod issuer;
-mod join;
-mod platform;
-mod utils;
-mod verifier;
-mod zpk;
+pub mod core;
+pub mod issuer;
+pub mod join;
+pub mod platform;
+pub mod utils;
+pub mod verifier;
+pub mod zpk;
 
 mod tests;

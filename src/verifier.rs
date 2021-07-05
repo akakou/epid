@@ -1,8 +1,10 @@
 use crate::core::PlatformAttestation;
 use crate::core::Signature;
+use crate::core::UnRevokedAttestation;
 use crate::core::GPK;
 use crate::utils::calc_sha256_scalar;
 use crate::utils::pj_pairing;
+use crate::zpk::zpk_verify;
 
 use bls12_381::pairing;
 use group::{Curve, GroupEncoding};
@@ -60,6 +62,13 @@ impl Verifier {
         vec.append(&mut msg.to_vec());
 
         let c_dash = calc_sha256_scalar(&vec);
+
+        for un_attest in signature.unrevoked_attestations.iter() {
+            let UnRevokedAttestation { proof1, proof2 } = un_attest;
+
+            zpk_verify(&proof1)?;
+            zpk_verify(&proof2)?;
+        }
 
         if c == c_dash {
             Ok(())
