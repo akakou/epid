@@ -65,6 +65,10 @@ impl Verifier {
 
         let c_dash = calc_sha256_scalar(&vec);
 
+        if rl.len() != signature.unrevoked_attestations.len() {
+            return Err(4);
+        };
+
         for (un_attest, r) in signature.unrevoked_attestations.iter().zip(rl.iter()) {
             let UnRevokedAttestation { mut proof1, proof2 } = &un_attest;
             proof1.large_a1 = r.large_b;

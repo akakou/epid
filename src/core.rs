@@ -21,6 +21,7 @@ pub struct ISK {
     pub gamma: Scalar,
 }
 
+#[derive(Copy, Clone)]
 pub struct PlatformAttestation {
     pub large_b: Gt,
     pub large_k: Gt,
@@ -40,11 +41,13 @@ pub struct UnRevokedAttestation<
     pub proof2: ZPKSignature<C>,
 }
 
+#[derive(Clone)]
 pub struct Signature {
     pub platform_attestation: PlatformAttestation,
     pub unrevoked_attestations: Vec<UnRevokedAttestation<Gt>>,
 }
 
+#[derive(Copy, Clone)]
 pub struct Revocation {
     pub large_b: Gt,
     pub large_k: Gt,
