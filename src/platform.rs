@@ -22,6 +22,7 @@ pub struct SK {
     pub f: Scalar,
 }
 
+#[derive(Clone, Copy)]
 pub struct Platform {
     pub gpk: GPK,
     pub sk: SK,
